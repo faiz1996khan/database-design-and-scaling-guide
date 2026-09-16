@@ -207,5 +207,5 @@ Use execution plans to understand behavior instead of relying only on one timing
 3. Composite index column order is important.
 4. Indexes increase storage and write overhead.
 5. PostgreSQL may choose a sequential scan even when an index exists.
-6. `EXPLAIN (ANALYZE, BUFFERS)` helps investigate query execution.
+6. `EXPLAIN ANALYZE` helps investigate query execution.
 7. Index design should be based on real query patterns.

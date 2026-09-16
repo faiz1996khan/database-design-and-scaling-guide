@@ -108,7 +108,7 @@ Run the same query.
 
 <img width="950" height="247" alt="image" src="https://github.com/user-attachments/assets/d7b2cd75-8d9a-4da0-aeed-f26692ea9c5c" />
 
-check `Execution Time`
+check `Execution Time` also notice the scan type instead of Sequential scan this time it used Bitmap heap scan
 
 ### 3. Index on a Low-Selectivity Column
 

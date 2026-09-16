@@ -1,6 +1,6 @@
-# Partitioning Lab
+# Partitioning
 
-This section demonstrates PostgreSQL table partitioning using the `orders` dataset from the indexing lab.
+This section demonstrates PostgreSQL table partitioning using the `orders` dataset.
 
 ## Goal
 

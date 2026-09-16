@@ -23,6 +23,7 @@ This section demonstrates how database indexes improve query performance and the
 ## Setup
 
 WINDOWS:
+
 Import DB schema into PostgreSQL running inside a docker container
 
 `Get-Content indexing/schema.sql | docker exec -i scaling-postgres psql -U testuser -d testDB`
@@ -41,9 +42,13 @@ We use an `orders` table containing approximately 1 million records.
 
 
 | id | Unique order identifier |
+
 | customer_id | Customer who placed the order |
+
 | order_status | pending, completed, or cancelled |
+
 | total_amount | Order amount |
+
 | created_at | Order creation timestamp |
 
 Records are generated using PostgreSQL's `generate_series()` function.

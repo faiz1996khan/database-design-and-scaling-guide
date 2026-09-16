@@ -147,7 +147,7 @@ WHERE customer_id = 5000;
 
 <img width="984" height="230" alt="image" src="https://github.com/user-attachments/assets/44139b1a-17fc-45a3-af56-37885d789c73" />
 
-Here we are looking for a specific records so index only scan is used.
+Here we are looking for a specific records and index exists for both the requested columns so index only scan is used.
 
 ### 5. Composite Index
 

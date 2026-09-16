@@ -61,21 +61,21 @@ means that partition contains rows where:
 created_at >= '2026-07-01'
 AND created_at <  '2026-10-01'
 ```
-# Create order_paritioned table
+## Create order_paritioned table
 
 <img width="576" height="203" alt="image" src="https://github.com/user-attachments/assets/acf60be3-18f9-491b-b818-e01d775113c9" />
 
 
-# Create partitions based on date ranges
+## Create partitions based on date ranges
 
 <img width="460" height="407" alt="image" src="https://github.com/user-attachments/assets/9ddd4466-1427-439d-a525-6df4533b856a" />
 
 
-# Insert data into order_partitioned table
+## Insert data into order_partitioned table
 
 <img width="693" height="172" alt="image" src="https://github.com/user-attachments/assets/abb9c125-9720-4d6d-96f7-5f8024200367" />
 
-# View paritions and number of records
+## View paritions and number of records
 
 <img width="442" height="241" alt="image" src="https://github.com/user-attachments/assets/c4fea7dc-6174-49fc-9a30-8ee18dda92eb" />
 
@@ -106,15 +106,15 @@ FROM orders_partitioned;
 
 Partitioning and indexing solve different problems.
 
-# Index -> Reduce the rows that need to be searched inside a table/partition
-# Partitioning -> Reduce the partitions that need to be accessed
-# Both -> Prune partitions first, then use indexes within the selected partitions
+Index -> Reduce the rows that need to be searched inside a table/partition
+Partitioning -> Reduce the partitions that need to be accessed
+Both -> Prune partitions first, then use indexes within the selected partitions
 
-# Create index on customer_id 
+## Create index on customer_id 
 
 <img width="616" height="398" alt="image" src="https://github.com/user-attachments/assets/202632ef-861e-4679-93aa-de1edbfbe17e" />
 
-# Query on index
+## Query on index
 
 <img width="614" height="102" alt="image" src="https://github.com/user-attachments/assets/024a0412-522c-4a48-80ed-248f252334e2" />
 

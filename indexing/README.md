@@ -20,16 +20,36 @@ This section demonstrates how database indexes improve query performance and the
 - SQL
 - PostgreSQL EXPLAIN ANALYZE
 
+## Setup
+
+WINDOWS:
+
+Import DB schema into PostgreSQL running inside a docker container
+
+`Get-Content indexing/schema.sql | docker exec -i scaling-postgres psql -U testuser -d testDB`
+
+Create 1M rows of random data using seed.sql file
+
+`Get-Content indexing/seed.sql | docker exec -i scaling-postgres psql -U testuser -d testDB`
+
+Connect to the database
+
+`docker exec -it scaling-postgres psql -U testuser -d testDB`
+
 ## Dataset
 
 We use an `orders` table containing approximately 1 million records.
 
 
-id | Unique order identifier
-customer_id | Customer who placed the order
-order_status | pending, completed, or cancelled
-total_amount | Order amount
-created_at | Order creation timestamp
+| id | Unique order identifier |
+
+| customer_id | Customer who placed the order |
+
+| order_status | pending, completed, or cancelled |
+
+| total_amount | Order amount |
+
+| created_at | Order creation timestamp |
 
 Records are generated using PostgreSQL's `generate_series()` function.
 
@@ -57,10 +77,15 @@ However, indexes also have costs:
 Query orders by customer ID without an index.
 
 ```sql
+EXPLAIN ANALYZE
 SELECT *
 FROM orders
 WHERE customer_id = 5000;
 ```
+
+<img width="849" height="263" alt="image" src="https://github.com/user-attachments/assets/e2d76a52-1e93-4adc-b603-ce0217735a6a" />
+
+
 
 Expected behavior:
 
@@ -77,11 +102,20 @@ CREATE INDEX idx_orders_customer_id
 ON orders(customer_id);
 ```
 
-Run the same query using `EXPLAIN ANALYZE`.
+<img width="531" height="55" alt="image" src="https://github.com/user-attachments/assets/4f4b0b37-23b5-464f-9eea-11f43f6714ed" />
 
-The query may now use a Bitmap Index Scan or another index-based access method.
+Run the same query.
+
+<img width="950" height="247" alt="image" src="https://github.com/user-attachments/assets/d7b2cd75-8d9a-4da0-aeed-f26692ea9c5c" />
+
+check `Execution Time` also notice the scan type instead of Sequential scan this time it used Bitmap heap scan
 
 ### 3. Index on a Low-Selectivity Column
+
+Query orders by order_status without an index.
+
+<img width="859" height="215" alt="image" src="https://github.com/user-attachments/assets/64e7978d-950f-4715-ab4a-bdabd5079706" />
+
 
 Create an index on `order_status`.
 
@@ -90,11 +124,36 @@ CREATE INDEX idx_orders_status
 ON orders(order_status);
 ```
 
+<img width="381" height="53" alt="image" src="https://github.com/user-attachments/assets/b01c4ab5-1602-479b-b7f3-29d1d69f7fdc" />
+
+Run the same query.
+
+<img width="965" height="248" alt="image" src="https://github.com/user-attachments/assets/7c24a70e-c7b3-4f88-9e23-ee5425037fdf" />
+
+check `Execution Time`
+
 Because many rows share the same status, PostgreSQL may still decide that scanning the table is more efficient for some queries.
 
 **Important:** An index does not guarantee better performance for every query.
 
-### 4. Composite Index
+### 4. Index only scan
+
+```sql
+EXPLAIN ANALYZE
+SELECT customer_id, order_status
+FROM orders
+WHERE customer_id = 5000;
+```
+
+<img width="984" height="230" alt="image" src="https://github.com/user-attachments/assets/44139b1a-17fc-45a3-af56-37885d789c73" />
+
+Here we are looking for a specific records and index exists for both the requested columns so index only scan is used.
+
+### 5. Composite Index
+
+Query orders with customer_id and order_status without an index.
+
+<img width="923" height="294" alt="image" src="https://github.com/user-attachments/assets/c3473f98-a7bb-42e0-a6d4-cff8cac2f096" />
 
 Create an index on both `customer_id` and `order_status`.
 
@@ -102,6 +161,15 @@ Create an index on both `customer_id` and `order_status`.
 CREATE INDEX idx_orders_customer_status
 ON orders(customer_id, order_status);
 ```
+<img width="382" height="52" alt="image" src="https://github.com/user-attachments/assets/8ac6ebbf-8026-422f-9454-825765d5f03d" />
+
+Run the same query.
+
+<img width="951" height="264" alt="image" src="https://github.com/user-attachments/assets/360cfc9f-55d6-47c0-b37b-c0b65445205a" />
+
+check `Execution Time`
+
+Not a big difference here because there already exist a index on customer_id and order_status.
 
 This index is useful for queries filtering by:
 
@@ -177,5 +245,5 @@ Use execution plans to understand behavior instead of relying only on one timing
 3. Composite index column order is important.
 4. Indexes increase storage and write overhead.
 5. PostgreSQL may choose a sequential scan even when an index exists.
-6. `EXPLAIN (ANALYZE, BUFFERS)` helps investigate query execution.
+6. `EXPLAIN ANALYZE` helps investigate query execution.
 7. Index design should be based on real query patterns.

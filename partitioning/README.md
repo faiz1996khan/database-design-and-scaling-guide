@@ -19,12 +19,11 @@ Example:
 
 ```text
 orders_partitioned
-│
-├── 2025 Q3
-├── 2025 Q4
-├── 2026 Q1
-├── 2026 Q2
-└── 2026 Q3
+ 2025 Q3
+ 2025 Q4
+ 2026 Q1
+ 2026 Q2
+ 2026 Q3
 ```
 
 Applications still query `orders_partitioned` as one table. PostgreSQL decides which partitions need to be accessed.
@@ -62,14 +61,23 @@ means that partition contains rows where:
 created_at >= '2026-07-01'
 AND created_at <  '2026-10-01'
 ```
-# Create order parition table partitions
+# Create order_paritioned table
+
+<img width="576" height="203" alt="image" src="https://github.com/user-attachments/assets/acf60be3-18f9-491b-b818-e01d775113c9" />
+
 
 # Create partitions based on date ranges
 
+<img width="460" height="407" alt="image" src="https://github.com/user-attachments/assets/9ddd4466-1427-439d-a525-6df4533b856a" />
+
+
 # Insert data into order_partitioned table
+
+<img width="693" height="172" alt="image" src="https://github.com/user-attachments/assets/abb9c125-9720-4d6d-96f7-5f8024200367" />
 
 # View paritions and number of records
 
+<img width="442" height="241" alt="image" src="https://github.com/user-attachments/assets/c4fea7dc-6174-49fc-9a30-8ee18dda92eb" />
 
 
 ## 4. Partition pruning
@@ -98,11 +106,21 @@ FROM orders_partitioned;
 
 Partitioning and indexing solve different problems.
 
-| Technique | Main purpose |
-|---|---|
-| Index | Reduce the rows that need to be searched inside a table/partition |
-| Partitioning | Reduce the partitions that need to be accessed |
-| Both | Prune partitions first, then use indexes within the selected partition(s) |
+# Index -> Reduce the rows that need to be searched inside a table/partition
+# Partitioning -> Reduce the partitions that need to be accessed
+# Both -> Prune partitions first, then use indexes within the selected partitions
+
+# Create index on customer_id 
+
+<img width="616" height="398" alt="image" src="https://github.com/user-attachments/assets/202632ef-861e-4679-93aa-de1edbfbe17e" />
+
+# Query on index
+
+<img width="614" height="102" alt="image" src="https://github.com/user-attachments/assets/024a0412-522c-4a48-80ed-248f252334e2" />
+
+
+<img width="981" height="335" alt="image" src="https://github.com/user-attachments/assets/b6bf0f9a-47fe-4d85-9554-825d8a8603f9" />
+
 
 For example:
 
@@ -112,20 +130,6 @@ FROM orders_partitioned
 WHERE created_at >= '2026-07-01'
   AND created_at < '2026-10-01'
   AND customer_id = 5000;
-```
-
-Conceptually:
-
-```text
-orders_partitioned
-       ↓
-created_at condition
-       ↓
-2026 Q3 partition only
-       ↓
-customer_id index
-       ↓
-matching rows
 ```
 
 **Important:** partitioning does not replace indexes.
@@ -144,38 +148,6 @@ DROP TABLE orders_partitioned_2025_q3;
 
 This is a common pattern for time-based retention, although production systems should also consider backups, foreign keys, dependencies, and retention requirements before dropping data.
 
-## 7. Partitioning vs sharding
-
-### Partitioning
-
-A single PostgreSQL database contains multiple partitions:
-
-```text
-             PostgreSQL
-                 │
-       ┌─────────┼─────────┐
-       ↓         ↓         ↓
-     Q1 2026   Q2 2026   Q3 2026
-```
-
-### Sharding
-
-Data is distributed across separate database instances/servers:
-
-```text
-             Application
-                 │
-       ┌─────────┼─────────┐
-       ↓         ↓         ↓
-    DB Shard 1 DB Shard 2 DB Shard 3
-```
-
-Easy way to remember:
-
-> **Partitioning = split a table.**
->
-> **Sharding = split a database across machines.**
-
 ## 8. Important PostgreSQL detail
 
 The example primary key is:
@@ -190,17 +162,8 @@ For a production schema, choose the key strategy based on the application's actu
 
 ## 9. What we demonstrated
 
-By the end of this lab you should understand:
-
 - A parent table can be partitioned by range.
 - Rows are automatically routed into the correct partition on insert.
 - Queries containing the partition key can benefit from partition pruning.
 - Indexes can exist on partitioned tables and be used within partitions.
 - Partitioning helps with very large tables and lifecycle/retention operations.
-- Partitioning is different from sharding.
-
-## 10. Next section
-
-**Sharding**
-
-We will move from splitting one table into partitions to distributing data across multiple PostgreSQL database instances.

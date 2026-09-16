@@ -21,11 +21,17 @@ This section demonstrates how database indexes improve query performance and the
 - PostgreSQL EXPLAIN ANALYZE
 
 ## Setup
+
+WINDOWS:
 Import DB schema into PostgreSQL running inside a docker container
 
 `Get-Content indexing/schema.sql | docker exec -i scaling-postgres psql -U testuser -d testDB`
 
-connect to the database
+Create 1M rows of random data using seed.sql file
+
+`Get-Content indexing/seed.sql | docker exec -i scaling-postgres psql -U testuser -d testDB`
+
+Connect to the database
 
 `docker exec -it scaling-postgres psql -U testuser -d testDB`
 

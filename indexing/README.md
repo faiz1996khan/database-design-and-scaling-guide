@@ -108,6 +108,7 @@ Run the same query.
 
 <img width="950" height="247" alt="image" src="https://github.com/user-attachments/assets/d7b2cd75-8d9a-4da0-aeed-f26692ea9c5c" />
 
+check `Execution Time`
 
 ### 3. Index on a Low-Selectivity Column
 
@@ -128,6 +129,8 @@ ON orders(order_status);
 Run the same query.
 
 <img width="965" height="248" alt="image" src="https://github.com/user-attachments/assets/7c24a70e-c7b3-4f88-9e23-ee5425037fdf" />
+
+check `Execution Time`
 
 Because many rows share the same status, PostgreSQL may still decide that scanning the table is more efficient for some queries.
 
@@ -150,6 +153,8 @@ ON orders(customer_id, order_status);
 Run the same query.
 
 <img width="951" height="264" alt="image" src="https://github.com/user-attachments/assets/360cfc9f-55d6-47c0-b37b-c0b65445205a" />
+
+check `Execution Time`
 
 Not a big difference here because there already exist a index on customer_id and order_status.
 

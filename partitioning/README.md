@@ -37,7 +37,13 @@ Partitioning is useful when a table becomes very large and the data has a natura
 - geographic regions
 - status or lifecycle boundaries in selected designs
 
-For this lab we partition by `created_at` because orders naturally have a time dimension.
+For this we partition by `created_at` because orders naturally have a time dimension.
+
+## Types of partitioning
+
+- Range partition
+- List partition
+- Hash partition  
 
 ## 3. Range partitioning
 
@@ -79,8 +85,111 @@ View paritions and number of records
 
 <img width="442" height="241" alt="image" src="https://github.com/user-attachments/assets/c4fea7dc-6174-49fc-9a30-8ee18dda92eb" />
 
+## 4. List partitioning
 
-## 4. Partition pruning
+List partitioning groups rows according to explicitly defined values.
+
+Example:
+
+orders:
+
+India
+
+Germany
+
+United States
+
+Create orders_by_region table and partitions
+
+Insert into orders_by_region
+
+It will be inserted into orders_india
+
+When to use list partitioning
+
+Use it when your categories are relatively stable and meaningful
+
+Examples:
+
+- Country
+
+- Business unit
+
+- Region
+
+- Product type
+
+Problems to consider
+
+What happens when a new region appears?
+
+If there is no matching partition, the insert fails unless you have a suitable default partition or create a new partition.
+
+Also, avoid creating thousands of partitions just because you have thousands of categories. Partition count and maintenance overhead matter.
+
+## 5. Hash partitioning
+
+Hash partitioning uses a hash of the partition key to determine which partition receives a row.
+
+It is useful when you want to distribute data relatively evenly without manually defining value ranges.
+
+orders
+
+Hash partition 0
+
+Hash partition 1
+
+Hash partition 2
+
+Hash partition 3
+
+Crate orders_by_hash and create partitions
+
+When to use hash partitioning
+
+Useful when:
+
+- You want to distribute rows across partitions
+
+- The partition key has many distinct values
+
+- You don't need date-based lifecycle management
+
+Limitations
+
+Hash partitioning is not ideal for queries requiring a date range or for removing old data by time
+
+Hash partitioning is about distribution
+
+## 6. Default partition
+
+A default partition stores rows that do not match any explicitly defined partition
+
+This can be useful when new values arrive unexpectedly
+
+Create default partition
+
+Now an order with an unconfigured region such as France, can go into the default partition
+
+## 7. Multi-level partitioning
+
+A table can be partitioned more than once
+
+This is called multi-level partitioning or subpartitioning
+
+Example: Range + Hash
+
+First, partition by year
+
+Then partition the 2026 data by hash of customer_id
+
+It can be useful when you have two separate requirements:
+
+- Queries and lifecycle management by date.
+
+- Distribution of data within a date range.
+
+## 8. Partition pruning
 
 The biggest concept is **partition pruning**.
 
@@ -102,7 +211,7 @@ SELECT COUNT(*)
 FROM orders_partitioned;
 ```
 
-## 5. Partitioning + indexing
+## 9. Partitioning + indexing
 
 Partitioning and indexing solve different problems.
 
@@ -134,7 +243,7 @@ WHERE created_at >= '2026-07-01'
 
 **Important:** partitioning does not replace indexes.
 
-## 6. Partition maintenance
+## 10. Partition maintenance
 
 Partitioning can make lifecycle operations easier.
 
@@ -148,7 +257,7 @@ DROP TABLE orders_partitioned_2025_q3;
 
 This is a common pattern for time-based retention, although production systems should also consider backups, foreign keys, dependencies, and retention requirements before dropping data.
 
-## 8. Important PostgreSQL detail
+## 11. Important PostgreSQL detail
 
 The example primary key is:
 
@@ -160,7 +269,7 @@ The partition key is included because PostgreSQL's partitioned-table uniqueness 
 
 For a production schema, choose the key strategy based on the application's actual uniqueness and lookup requirements.
 
-## 9. What we demonstrated
+## 12. What we demonstrated
 
 - A parent table can be partitioned by range.
 - Rows are automatically routed into the correct partition on insert.

@@ -193,7 +193,7 @@ Rebalancing usually involves:
 
 ## Range-based
 
-Our lab uses range-based sharding:
+Our uses range-based sharding:
 
 ```text
 1–50,000 - Shard 1

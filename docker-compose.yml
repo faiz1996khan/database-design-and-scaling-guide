@@ -11,6 +11,32 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  
+  postgres-shard-1:
+    image: postgres:17
+    container_name: shard-1
+    environment:
+      POSTGRES_USER: sharduser1
+      POSTGRES_PASSWORD: shardpassword1
+      POSTGRES_DB: shard_db1
+    ports:
+      - "5433:5432"
+    volumes:
+      - shard_1_data:/var/lib/postgresql/data
+
+  postgres-shard-2:
+    image: postgres:17
+    container_name: shard-2
+    environment:
+      POSTGRES_USER: sharduser2
+      POSTGRES_PASSWORD: shardpassword2
+      POSTGRES_DB: shard_db2
+    ports:
+      - "5434:5432"
+    volumes:
+      - shard_2_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
+  shard_1_data:
+  shard_2_data:

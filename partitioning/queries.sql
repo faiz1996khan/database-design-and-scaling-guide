@@ -95,3 +95,66 @@ FROM orders_partitioned
 WHERE created_at >= '2026-07-01'
   AND created_at < '2026-10-01'
   AND customer_id = 5000;
+
+-- 10. Create list partition
+CREATE TABLE orders_by_region (
+    id BIGINT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    region VARCHAR(30) NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL
+) PARTITION BY LIST (region);
+
+-- 11. Create partition
+CREATE TABLE orders_india
+    PARTITION OF orders_by_region
+    FOR VALUES IN ('India');
+
+CREATE TABLE orders_germany
+    PARTITION OF orders_by_region
+    FOR VALUES IN ('Germany');
+
+CREATE TABLE orders_usa
+    PARTITION OF orders_by_region
+    FOR VALUES IN ('United States');
+
+
+-- 12. Insert into orders_by_region
+INSERT INTO orders_by_region
+VALUES (1, 100, 'India', 2500);
+
+
+-- 13. Fetch Data from orders_india
+SELECT * FROM orders_india;
+
+
+-- 14. Create hash partitions
+CREATE TABLE orders_by_hash (
+    id BIGINT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL
+) PARTITION BY HASH (customer_id);
+
+
+-- 15. Create partition
+CREATE TABLE orders_hash_0
+    PARTITION OF orders_by_hash
+    FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+
+CREATE TABLE orders_hash_1
+    PARTITION OF orders_by_hash
+    FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+
+CREATE TABLE orders_hash_2
+    PARTITION OF orders_by_hash
+    FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+
+CREATE TABLE orders_hash_3
+    PARTITION OF orders_by_hash
+    FOR VALUES WITH (MODULUS 4, REMAINDER 3);
+
+
+-- 16. Create default partition 
+CREATE TABLE orders_other
+    PARTITION OF orders_by_region
+    DEFAULT;
+CREATE TABLE

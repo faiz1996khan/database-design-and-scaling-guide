@@ -30,10 +30,25 @@ Create 2 shard-1 and shard-2 different containers refer `docker-compose.yml`.
 
 # 4. Create shard
 
-create shard-1
+create shard-1 table
 
-create shard-2
+<img width="429" height="203" alt="image" src="https://github.com/user-attachments/assets/ae9fd278-b733-46dc-b5eb-d16e787893d6" />
 
+create shard-2 table
+
+<img width="512" height="204" alt="image" src="https://github.com/user-attachments/assets/0b339e2c-0ffb-46d2-b6b6-f2a92b2a2a74" />
+
+Insert data into shards
+
+<img width="655" height="378" alt="image" src="https://github.com/user-attachments/assets/f3706633-8397-468f-9be8-7a41e05053db" />
+
+<img width="662" height="375" alt="image" src="https://github.com/user-attachments/assets/9c1097b2-bcc1-4d0b-9fa6-83a9aad163c6" />
+
+Querying data from shards
+
+<img width="675" height="289" alt="image" src="https://github.com/user-attachments/assets/26260efa-86dc-408e-bf3c-b8386d5821a5" />
+
+<img width="639" height="265" alt="image" src="https://github.com/user-attachments/assets/4ff7780b-eab6-4262-9a63-47d5a985555f" />
 
 # 7. What Is a Shard Key
 
@@ -135,6 +150,10 @@ Shard 2 - failure
 
 For important financial or transactional operations, incomplete data should generally not be presented as a complete result.
 
+## Query execution result from `execute-queries.js`
+
+<img width="704" height="1085" alt="image" src="https://github.com/user-attachments/assets/8a2ea8db-6607-496b-8096-e8b9c7b9864f" />
+
 # 13. Shard Rebalancing
 
 Adding another shard is not just a routing change.
@@ -174,7 +193,7 @@ Rebalancing usually involves:
 
 ## Range-based
 
-Our lab uses range-based sharding:
+Our uses range-based sharding:
 
 ```text
 1–50,000 - Shard 1

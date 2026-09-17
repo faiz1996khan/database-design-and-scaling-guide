@@ -90,109 +90,96 @@ View paritions and number of records
 List partitioning groups rows according to explicitly defined values.
 
 Example:
-
 orders:
-
 India
-
 Germany
-
 United States
 
 Create orders_by_region table and partitions
 
+<img width="449" height="354" alt="image" src="https://github.com/user-attachments/assets/1abda229-0843-4d7f-933d-b0a09b8aec0e" />
+
 Insert into orders_by_region
+
+<img width="493" height="51" alt="image" src="https://github.com/user-attachments/assets/6f00007e-7af7-48ae-8db5-cc701ecc18a7" />
+
 
 It will be inserted into orders_india
 
-When to use list partitioning
+<img width="470" height="96" alt="image" src="https://github.com/user-attachments/assets/d8d70984-eaf1-4368-a6f5-cff8b7201912" />
+
+### When to use list partitioning
 
 Use it when your categories are relatively stable and meaningful
 
 Examples:
-
 - Country
-
 - Business unit
-
 - Region
-
 - Product type
 
-Problems to consider
+### Problems to consider
 
 What happens when a new region appears?
 
 If there is no matching partition, the insert fails unless you have a suitable default partition or create a new partition.
-
 Also, avoid creating thousands of partitions just because you have thousands of categories. Partition count and maintenance overhead matter.
 
 ## 5. Hash partitioning
 
 Hash partitioning uses a hash of the partition key to determine which partition receives a row.
-
 It is useful when you want to distribute data relatively evenly without manually defining value ranges.
 
 orders
-
 Hash partition 0
-
 Hash partition 1
-
 Hash partition 2
-
 Hash partition 3
 
 Crate orders_by_hash and create partitions
 
-When to use hash partitioning
+<img width="551" height="427" alt="image" src="https://github.com/user-attachments/assets/9eef0b0b-1b56-4ce6-8b6c-752009d25a6d" />
+
+### When to use hash partitioning
 
 Useful when:
-
 - You want to distribute rows across partitions
-
 - The partition key has many distinct values
-
 - You don't need date-based lifecycle management
 
-Limitations
+### Limitations
 
 Hash partitioning is not ideal for queries requiring a date range or for removing old data by time
-
 Hash partitioning is about distribution
 
 ## 6. Default partition
 
 A default partition stores rows that do not match any explicitly defined partition
-
 This can be useful when new values arrive unexpectedly
 
 Create default partition
+
+<img width="447" height="67" alt="image" src="https://github.com/user-attachments/assets/f1cbe1a7-041b-459e-a530-6f2e90a419ff" />
 
 Now an order with an unconfigured region such as France, can go into the default partition
 
 ## 7. Multi-level partitioning
 
 A table can be partitioned more than once
-
 This is called multi-level partitioning or subpartitioning
 
 Example: Range + Hash
-
 First, partition by year
-
 Then partition the 2026 data by hash of customer_id
 
-It can be useful when you have two separate requirements:
+### It can be useful when you have two separate requirements:
 
 - Queries and lifecycle management by date.
-
 - Distribution of data within a date range.
 
 ## 8. Partition pruning
 
 The biggest concept is **partition pruning**.
-
 When PostgreSQL receives a query such as:
 
 ```sql

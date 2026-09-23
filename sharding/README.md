@@ -263,17 +263,17 @@ Sharding introduces:
 This demonstrates:
 
 ```text
-✓ Two PostgreSQL shards
-✓ Shard key: customer_id
-✓ Range-based routing
-✓ Shard manager
-✓ Targeted queries
-✓ Scatter-gather queries
-✓ Parallel shard queries
-✓ Shard failure handling
-✓ Shard health checks
-✓ Rebalancing concepts
-✓ Cross-shard transaction challenges
+* Two PostgreSQL shards
+* Shard key: customer_id
+* Range-based routing
+* Shard manager
+* Targeted queries
+* Scatter-gather queries
+* Parallel shard queries
+* Shard failure handling
+* Shard health checks
+* Rebalancing concepts
+* Cross-shard transaction challenges
 ```
 
 The main idea is:

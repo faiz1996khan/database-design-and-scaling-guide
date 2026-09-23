@@ -262,7 +262,6 @@ Sharding introduces:
 
 This demonstrates:
 
-```text
 * Two PostgreSQL shards
 * Shard key: customer_id
 * Range-based routing
@@ -274,7 +273,7 @@ This demonstrates:
 * Shard health checks
 * Rebalancing concepts
 * Cross-shard transaction challenges
-```
+
 
 The main idea is:
 

@@ -1,4 +1,4 @@
-# Database Scaling - Sharding
+# Sharding
 
 This module demonstrates **database sharding** using multiple PostgreSQL instances with Node.js.
 

@@ -1,0 +1,124 @@
+services:
+  postgres-primary:
+    image: postgres:17
+    container_name: scaling-primary
+    environment:
+      POSTGRES_USER: repluser
+      POSTGRES_PASSWORD: replpassword
+      POSTGRES_DB: replication_primary
+    ports:
+      - "5435:5432"
+    volumes:
+      - primary_data:/var/lib/postgresql/data
+      - ./primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./primary/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=10
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+
+  
+  postgres-replica:
+    image: postgres:17
+    container_name: scaling-replica
+    environment:
+      PGPASSWORD: replpassword
+    ports:
+      - "5436:5432"
+    depends_on:
+      - postgres-primary
+    volumes:
+      - replica_data:/var/lib/postgresql/data
+    command:
+      - bash
+      - -c
+      - |
+        chown -R postgres:postgres "$$PGDATA"
+        chmod 700 "$$PGDATA"
+
+        until pg_isready -h scaling-primary -p 5432 -U repluser -d replication_primary; do
+          sleep 1
+        done
+
+        if [ ! -s "$$PGDATA/PG_VERSION" ]; then
+          rm -rf "$$PGDATA"/*
+
+          pg_basebackup \
+            -h scaling-primary \
+            -p 5432 \
+            -U repluser \
+            -D "$$PGDATA" \
+            -Fp \
+            -Xs \
+            -P \
+            -R
+
+          echo "scaling-primary:5432:*:repluser:replpassword" \
+            > "$$PGDATA/.pgpass"
+
+          chown postgres:postgres "$$PGDATA/.pgpass"
+          chmod 600 "$$PGDATA/.pgpass"
+        fi
+
+        chown -R postgres:postgres "$$PGDATA"
+        chmod 700 "$$PGDATA"
+
+        exec gosu postgres postgres
+
+  postgres-multi-a:
+    image: postgres:17
+    container_name: scaling-multi-a
+    environment:
+      POSTGRES_USER: repluser
+      POSTGRES_PASSWORD: replpassword
+      POSTGRES_DB: multi_primary
+    ports:
+      - "5437:5432"
+    volumes:
+      - multi_a_data:/var/lib/postgresql/data
+      - ./multi-primary/node-a/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./multi-primary/node-a/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+
+  postgres-multi-b:
+    image: postgres:17
+    container_name: scaling-multi-b
+    environment:
+      POSTGRES_USER: repluser
+      POSTGRES_PASSWORD: replpassword
+      POSTGRES_DB: multi_primary
+    ports:
+      - "5438:5432"
+    volumes:
+      - multi_b_data:/var/lib/postgresql/data
+      - ./multi-primary/node-b/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./multi-primary/node-b/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+
+volumes:
+  primary_data:
+  replica_data:
+  multi_a_data:
+  multi_b_data:

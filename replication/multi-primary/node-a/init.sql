@@ -1,0 +1,10 @@
+CREATE TABLE orders (
+    id BIGINT PRIMARY KEY,
+    customer_id BIGINT NOT NULL,
+    order_status VARCHAR(20) NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE PUBLICATION node_a_publication
+FOR TABLE orders;

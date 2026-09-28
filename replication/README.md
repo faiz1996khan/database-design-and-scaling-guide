@@ -87,7 +87,7 @@ There is no custom Dockerfile.
 
 ---
 
-# 3. Primary / Replica
+# 2. Primary / Replica
 
 The first replication model is:
 
@@ -97,11 +97,11 @@ The replica is read-only while it is acting as a standby.
 
 ---
 
-# 4. Docker Configuration
+# 3. Docker Configuration
 
 refer docker-compose.yml file
 
-# 5. Why These PostgreSQL Settings Are Needed
+# 4. Why These PostgreSQL Settings Are Needed
 
 The primary uses:
 
@@ -123,7 +123,7 @@ We deliberately keep this small for the learning project.
 
 ---
 
-# 6. Configure PostgreSQL Authentication
+# 5. Configure PostgreSQL Authentication
 
 `primary/pg_hba.conf`:
 
@@ -147,7 +147,7 @@ A production configuration should restrict access to trusted networks or specifi
 
 ---
 
-# 7. Create the Initial Database
+# 6. Create the Initial Database
 
 `primary/init.sql`:
 
@@ -177,7 +177,7 @@ The `REPLICATION` attribute allows `repluser` to be used for the replication con
 
 ---
 
-# 8. Important Docker Initialization Detail
+# 7. Important Docker Initialization Detail
 
 PostgreSQL Docker initialization scripts execute when a PostgreSQL data directory is initialized.
 
@@ -207,7 +207,7 @@ Do not casually use this in production because it destroys the database volume.
 
 ---
 
-# 9. Start the Replication
+# 8. Start the Replication
 
 From the repository root:
 
@@ -230,7 +230,7 @@ scaling-replica
 
 ---
 
-# 10. Verify the Primary
+# 9. Verify the Primary
 
 Connect to the primary:
 
@@ -276,7 +276,7 @@ This gives the replica an initial copy of the primary data.
 
 ---
 
-# 12. Why `pg_basebackup` Is Required
+# 10. Why `pg_basebackup` Is Required
 
 A new replica cannot simply start with an empty PostgreSQL database and begin replaying changes.
 
@@ -322,7 +322,7 @@ This is what allows the replica to start streaming from the primary.
 
 ---
 
-# 13. Verify That PostgreSQL Thinks the Replica Is a Standby
+# 11. Verify That PostgreSQL Thinks the Replica Is a Standby
 
 On the replica:
 
@@ -341,7 +341,7 @@ While acting as a physical standby, normal writes are not allowed.
 
 ---
 
-# 14. Verify Replication From the Primary
+# 12. Verify Replication From the Primary
 
 Run on the primary:
 
@@ -362,7 +362,7 @@ This verifies that the replica has established a streaming replication connectio
 
 ---
 
-# 15. How Streaming Replication Works
+# 13. How Streaming Replication Works
 
 PostgreSQL uses the Write-Ahead Log (WAL).
 
@@ -371,7 +371,7 @@ Instead of repeatedly copying the whole database, PostgreSQL records database ch
 <img width="235" height="408" alt="image" src="https://github.com/user-attachments/assets/500991a8-c6a7-41e4-be6c-54ef05899965" />
 
 
-# 16. Test a New Write
+# 14. Test a New Write
 
 On the primary:
 
@@ -414,7 +414,7 @@ The application does not directly perform the second insert.
 
 ---
 
-# 17. Replica Is Read-Only
+# 15. Replica Is Read-Only
 
 Try this on the replica:
 
@@ -440,7 +440,7 @@ This allows read traffic to be distributed across replicas.
 
 ---
 
-# 18. Read Scaling
+# 16. Read Scaling
 
 With replicas:
 
@@ -453,7 +453,7 @@ Read traffic can be distributed among replicas.
 
 ---
 
-# 19. Replication Lag
+# 17. Replication Lag
 
 Replication is not necessarily instantaneous.
 
@@ -490,7 +490,7 @@ The replica may be behind the primary because of:
 
 ---
 
-# 20. Measuring Replication Progress
+# 18. Measuring Replication Progress
 
 On the primary:
 
@@ -524,7 +524,7 @@ If the difference grows continuously, the replica is falling behind.
 
 ---
 
-# 21. Read-After-Write Consistency Problem
+# 19. Read-After-Write Consistency Problem
 
 Consider:
 
@@ -553,7 +553,7 @@ The exact approach depends on the application's consistency requirements.
 
 ---
 
-# 22. What Happens If the Replica Fails?
+# 20. What Happens If the Replica Fails?
 
 Stop it:
 
@@ -592,7 +592,7 @@ The replica can catch up using the WAL it still needs, assuming the required WAL
 
 ---
 
-# 23. What Happens If the Primary Fails?
+# 21. What Happens If the Primary Fails?
 
 Simulate a primary failure:
 
@@ -625,7 +625,7 @@ Replication alone did not automatically fail over.
 
 ---
 
-# 24. Promote the Replica
+# 22. Promote the Replica
 
 Promote the replica:
 
@@ -657,7 +657,7 @@ It is now writable.
 
 ---
 
-# 25. Verify the New Primary
+# 23. Verify the New Primary
 
 Insert a new row:
 
@@ -685,7 +685,7 @@ FROM orders ORDER BY id;
 
 The old replica has now become the new primary.
 
-# 26. Promotion Is Not the Same as Automatic Failover
+# 24. Promotion Is Not the Same as Automatic Failover
 
 The promotion command was manual:
 
@@ -695,7 +695,7 @@ pg_ctl promote
 
 A production HA system typically adds an orchestration/failover layer or uses a managed PostgreSQL service.
 
-# 27. What Happens When the Old Primary Comes Back?
+# 25. What Happens When the Old Primary Comes Back?
 
 This is critical.
 
@@ -715,7 +715,7 @@ This is known as re-provisioning or rejoining the old primary.
 
 ---
 
-# 28. Asynchronous Replication and Possible Data Loss
+# 26. Asynchronous Replication and Possible Data Loss
 
 Our primary/replica lab uses:
 
@@ -731,7 +731,7 @@ This is the main durability tradeoff of asynchronous replication.
 
 ---
 
-# 29. RPO
+# 27. RPO
 
 RPO means:
 
@@ -753,7 +753,7 @@ There are still important operational nuances, but the tradeoff is the key conce
 
 ---
 
-# 30. Synchronous Replication
+# 28. Synchronous Replication
 
 PostgreSQL also supports synchronous replication.
 
@@ -772,7 +772,7 @@ We discussed synchronous replication as part of the replication design, but this
 
 ---
 
-# 32. Split-Brain
+# 29. Split-Brain
 
 One of the most dangerous distributed database problems is split-brain.
 
@@ -796,7 +796,7 @@ This can involve:
 
 ---
 
-# 33. Multi-Primary Replication
+# 30. Multi-Primary Replication
 
 The second replication model in this project is bidirectional logical replication.
 
@@ -824,7 +824,7 @@ In this lab, PostgreSQL logical replication is used to demonstrate the mechanics
 
 ---
 
-# 34. Why Logical Replication?
+# 31. Why Logical Replication?
 
 Physical replication is used for the primary/standby model.
 
@@ -840,14 +840,14 @@ B publishes -> A subscribes
 
 ---
 
-# 35. Multi-Primary Docker Services
+# 32. Multi-Primary Docker Services
 
 We use two PostgreSQL 17 containers.
 
 refer replication/docker-compose.yml
 ---
 
-# 36. Multi-Primary PostgreSQL Configuration
+# 33. Multi-Primary PostgreSQL Configuration
 
 Logical replication requires:
 
@@ -866,7 +866,7 @@ because subscriptions require replication connections and slots.
 
 ---
 
-# 37. Create the Table on Both Nodes
+# 34. Create the Table on Both Nodes
 
 Logical replication does not automatically replicate arbitrary schema/DDL changes.
 
@@ -904,7 +904,7 @@ FOR TABLE orders;
 
 ---
 
-# 38. Publication
+# 35. Publication
 
 A publication defines what a PostgreSQL node makes available to logical replication.
 
@@ -917,7 +917,7 @@ FOR TABLE orders;
 
 ---
 
-# 39. Subscription
+# 36. Subscription
 
 On Node B:
 
@@ -950,7 +950,7 @@ Node A <--------> Node B
 
 ---
 
-# 40. Why `copy_data=false`?
+# 37. Why `copy_data=false`?
 
 Both databases were initialized independently.
 
@@ -972,7 +972,7 @@ For production-style logical replication setup, the initial data synchronization
 
 ---
 
-# 41. Test Write on Node A
+# 38. Test Write on Node A
 
 Node A:
 
@@ -999,7 +999,7 @@ SELECT * FROM orders;
 
 The row should appear.
 
-# 42. Test Write on Node B
+# 39. Test Write on Node B
 
 Node B:
 
@@ -1034,7 +1034,7 @@ Both nodes are writable.
 
 ---
 
-# 43. The Biggest Multi-Primary Problem: Conflicts
+# 40. The Biggest Multi-Primary Problem: Conflicts
 
 Consider the same row:
 
@@ -1071,7 +1071,7 @@ A conflict can stop logical replication for the affected subscription and requir
 
 ---
 
-# 44. Global ID Generation
+# 41. Global ID Generation
 
 Multi-primary makes locally generated numeric IDs dangerous.
 
@@ -1104,7 +1104,7 @@ The important concept is:
 
 ---
 
-# 45. Schema Changes
+# 42. Schema Changes
 
 Another important distinction:
 
@@ -1129,7 +1129,7 @@ A production deployment needs an explicit migration strategy.
 
 ---
 
-# 46. Multi-Primary Use Cases
+# 43. Multi-Primary Use Cases
 
 Multi-primary can be useful when multiple locations need to accept writes.
 
@@ -1162,7 +1162,7 @@ However, this comes with significantly greater consistency complexity.
 ---
 
 
-# 50. Important Production Considerations
+# 44. Important Production Considerations
 
 Replication is not only about copying data.
 
@@ -1220,7 +1220,7 @@ You still need independent backups and a recovery strategy.
 
 ---
 
-# 51. Replication Is Not a Backup
+# 45. Replication Is Not a Backup
 
 This is extremely important.
 
@@ -1240,7 +1240,7 @@ A production system needs both.
 
 ---
 
-# 52. RTO and RPO
+# 46. RTO and RPO
 
 Two important disaster-recovery metrics are:
 

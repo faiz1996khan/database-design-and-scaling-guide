@@ -20,7 +20,6 @@ We cover:
 * Replica promotion
 * Rejoining an old primary
 * Synchronous replication concepts
-* Replication slots
 * Split-brain
 * Logical replication
 * Multi-primary / bidirectional replication
@@ -35,19 +34,8 @@ Database replication means maintaining a copy of database data on another databa
 
 With a primary/replica architecture:
 
-```text
-                ┌──────────────┐
-                │   PRIMARY    │
-                │ PostgreSQL   │
-                └──────┬───────┘
-                       │
-                       │ WAL
-                       ▼
-                ┌──────────────┐
-                │   REPLICA    │
-                │ PostgreSQL   │
-                └──────────────┘
-```
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/833e6b7e-5428-4940-bd47-204f39de6e92" />
+
 
 The primary accepts writes.
 
@@ -55,20 +43,8 @@ The replica receives changes from the primary and replays them.
 
 A typical application architecture is:
 
-```text
-                Application
-                 /       \
-                /         \
-             WRITE        READ
-               |            |
-               ▼            ▼
-          ┌─────────┐  ┌─────────┐
-          │ Primary │  │ Replica │
-          └────┬────┘  └─────────┘
-               │
-               │ WAL
-               └──────────────►
-```
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/a834b7b6-b2e9-4ec7-8c4d-d6b4affd8389" />
+
 
 Replication is different from sharding.
 
@@ -77,8 +53,8 @@ Replication is different from sharding.
 Every database contains the same dataset:
 
 ```text
-Primary  →  full dataset
-Replica  →  full dataset
+Primary  ->  full dataset
+Replica  -> full dataset
 ```
 
 ### Sharding
@@ -86,8 +62,8 @@ Replica  →  full dataset
 Each database contains part of the dataset:
 
 ```text
-Shard 1 → customers 1–50,000
-Shard 2 → customers 50,001–100,000
+Shard 1 -> customers 1–50,000
+Shard 2 -> customers 50,001–100,000
 ```
 
 Replication primarily helps with:
@@ -105,42 +81,15 @@ Replication does not by itself solve:
 
 ---
 
-# 2. Project Structure
-
-Replication is implemented at the root of the repository.
-
-```text
-database-design-and-scaling-guide/
-│
-├── docker-compose.yml
-│
-├── primary/
-│   ├── init.sql
-│   └── pg_hba.conf
-│
-└── multi-primary/
-    ├── node-a/
-    │   ├── init.sql
-    │   └── pg_hba.conf
-    │
-    └── node-b/
-        ├── init.sql
-        └── pg_hba.conf
-```
-
 We intentionally use the standard PostgreSQL Docker image.
 
 There is no custom Dockerfile.
 
 ---
 
-# 3. Primary / Replica Lab
+# 3. Primary / Replica
 
 The first replication model is:
-
-```text
-Primary → Replica
-```
 
 The primary is writable.
 
@@ -150,79 +99,7 @@ The replica is read-only while it is acting as a standby.
 
 # 4. Docker Configuration
 
-The primary uses PostgreSQL 17:
-
-```yaml
-postgres-primary:
-  image: postgres:17
-  container_name: scaling-primary
-  environment:
-    POSTGRES_USER: repluser
-    POSTGRES_PASSWORD: replpassword
-    POSTGRES_DB: replication_primary
-  ports:
-    - "5435:5432"
-  volumes:
-    - primary_data:/var/lib/postgresql/data
-    - ./primary/init.sql:/docker-entrypoint-initdb.d/init.sql
-    - ./primary/pg_hba.conf:/etc/postgresql/pg_hba.conf
-  command:
-    - postgres
-    - -c
-    - wal_level=replica
-    - -c
-    - max_wal_senders=10
-    - -c
-    - hba_file=/etc/postgresql/pg_hba.conf
-```
-
-The replica uses another PostgreSQL 17 container:
-
-```yaml
-postgres-replica:
-  image: postgres:17
-  container_name: scaling-replica
-  environment:
-    PGPASSWORD: replpassword
-  ports:
-    - "5436:5432"
-  depends_on:
-    - postgres-primary
-  volumes:
-    - replica_data:/var/lib/postgresql/data
-  command:
-    - bash
-    - -c
-    - |
-      until pg_isready -h scaling-primary -p 5432 -U repluser; do
-        sleep 1
-      done
-
-      if [ ! -s "$$PGDATA/PG_VERSION" ]; then
-        rm -rf "$$PGDATA"/*
-        pg_basebackup \
-          -h scaling-primary \
-          -p 5432 \
-          -U repluser \
-          -D "$$PGDATA" \
-          -Fp \
-          -Xs \
-          -P \
-          -R
-      fi
-
-      exec postgres
-```
-
-Volumes:
-
-```yaml
-volumes:
-  primary_data:
-  replica_data:
-```
-
----
+refer docker-compose.yml file
 
 # 5. Why These PostgreSQL Settings Are Needed
 
@@ -330,7 +207,7 @@ Do not casually use this in production because it destroys the database volume.
 
 ---
 
-# 9. Start the Replication Lab
+# 9. Start the Replication
 
 From the repository root:
 
@@ -368,17 +245,8 @@ Run:
 SELECT * FROM orders;
 ```
 
-Expected:
+<img width="666" height="136" alt="image" src="https://github.com/user-attachments/assets/61ad9fdc-c62f-48ed-b090-9f9e0f655e60" />
 
-```text
-1001 | 1001 | completed | 500.00
-1002 | 1002 | pending   | 750.00
-1003 | 1003 | completed | 1200.00
-```
-
-The exact formatting depends on `psql`.
-
----
 
 # 11. Verify the Replica
 
@@ -394,18 +262,15 @@ Run:
 ```sql
 SELECT * FROM orders;
 ```
+<img width="520" height="141" alt="image" src="https://github.com/user-attachments/assets/21ccaec6-3faa-4586-81d6-e48ebb13dca5" />
+
 
 The same rows should be present.
 
 The flow is:
 
-```text
-Primary
-   │
-   │ pg_basebackup
-   ▼
-Replica
-```
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/5be61503-574e-4c75-839d-4359465c609c" />
+
 
 This gives the replica an initial copy of the primary data.
 
@@ -416,21 +281,6 @@ This gives the replica an initial copy of the primary data.
 A new replica cannot simply start with an empty PostgreSQL database and begin replaying changes.
 
 The replica needs an initial copy.
-
-The process is:
-
-```text
-Primary database
-       │
-       ▼
-pg_basebackup
-       │
-       ▼
-Replica receives initial database copy
-       │
-       ▼
-Replica starts consuming WAL
-```
 
 We use:
 
@@ -479,12 +329,7 @@ On the replica:
 ```sql
 SELECT pg_is_in_recovery();
 ```
-
-Expected:
-
-```text
- t
-```
+<img width="529" height="101" alt="image" src="https://github.com/user-attachments/assets/0d3deb92-b71c-4c19-b1ad-cf2390dfe931" />
 
 Meaning:
 
@@ -510,10 +355,8 @@ FROM pg_stat_replication;
 
 A healthy streaming replica should show something conceptually similar to:
 
-```text
-state       = streaming
-sync_state  = async
-```
+<img width="443" height="159" alt="image" src="https://github.com/user-attachments/assets/d60d9ee4-8e43-4d2d-8925-edc526daea74" />
+
 
 This verifies that the replica has established a streaming replication connection.
 
@@ -525,49 +368,8 @@ PostgreSQL uses the Write-Ahead Log (WAL).
 
 Instead of repeatedly copying the whole database, PostgreSQL records database changes in WAL.
 
-Conceptually:
+<img width="235" height="408" alt="image" src="https://github.com/user-attachments/assets/500991a8-c6a7-41e4-be6c-54ef05899965" />
 
-```text
-INSERT
-  │
-  ▼
-WAL record
-  │
-  ▼
-Primary WAL
-  │
-  ▼
-WAL sender
-  │
-  ▼
-Network
-  │
-  ▼
-WAL receiver
-  │
-  ▼
-Replica replays WAL
-```
-
-A simplified example:
-
-```text
-INSERT order 1004
-       │
-       ▼
-Primary generates WAL
-       │
-       ▼
-Replica receives WAL
-       │
-       ▼
-Replica replays WAL
-       │
-       ▼
-Order 1004 appears on replica
-```
-
----
 
 # 16. Test a New Write
 
@@ -593,6 +395,9 @@ SELECT * FROM orders
 ORDER BY id;
 ```
 
+<img width="636" height="207" alt="image" src="https://github.com/user-attachments/assets/0a0f8c68-2897-4c06-838a-2c6e7d494f44" />
+
+
 Then check the replica:
 
 ```sql
@@ -600,21 +405,10 @@ SELECT * FROM orders
 ORDER BY id;
 ```
 
+<img width="543" height="173" alt="image" src="https://github.com/user-attachments/assets/438fce12-733a-4961-9134-552b771c9c05" />
+
+
 The new order should eventually appear on the replica.
-
-The important point is:
-
-```text
-Application
-     │
-     │ INSERT
-     ▼
-Primary
-     │
-     │ WAL
-     ▼
-Replica
-```
 
 The application does not directly perform the second insert.
 
@@ -639,19 +433,8 @@ VALUES (
 
 The standby should reject the write.
 
-The normal architecture is:
+<img width="674" height="40" alt="image" src="https://github.com/user-attachments/assets/c3ae0971-86d7-4412-b3e0-5ec07fca42a0" />
 
-```text
-WRITE
-  │
-  ▼
-PRIMARY
-
-READ
-  │
-  ▼
-REPLICA
-```
 
 This allows read traffic to be distributed across replicas.
 
@@ -659,37 +442,10 @@ This allows read traffic to be distributed across replicas.
 
 # 18. Read Scaling
 
-Without replicas:
-
-```text
-                Application
-                    │
-                    ▼
-                 Primary
-              /    |    \
-           READ  READ   READ
-```
-
 With replicas:
 
-```text
-                Application
-                 /       \
-              WRITE      READ
-                │          │
-                ▼          ▼
-             Primary    Replica
-```
+<img width="630" height="407" alt="image" src="https://github.com/user-attachments/assets/722fcf63-7594-4534-99b6-28144184c31f" />
 
-With multiple replicas:
-
-```text
-                    Primary
-                   /   |   \
-                  /    |    \
-                 ▼     ▼     ▼
-            Replica1 Replica2 Replica3
-```
 
 The write workload still reaches the primary.
 
@@ -764,16 +520,6 @@ SELECT
 FROM pg_stat_replication;
 ```
 
-Conceptually:
-
-```text
-Primary WAL position
-        │
-        │ difference
-        ▼
-Replica replay position
-```
-
 If the difference grows continuously, the replica is falling behind.
 
 ---
@@ -796,41 +542,12 @@ GET /orders
 
 If the GET is routed to a replica, the new order may not yet be visible.
 
-Example:
-
-```text
-POST /orders
-     │
-     ▼
-Primary
-     │
-     ├── commit
-     │
-     └── WAL ─────► Replica
-                       │
-                    not replayed yet
-
-GET /orders
-     │
-     ▼
-Replica
-     │
-     └── old state
-```
-
 This creates a read-after-write consistency issue.
 
 A common application strategy is:
 
-```text
-Normal reads
-    ↓
-Replica
-
-Immediate read after a write
-    ↓
-Primary
-```
+Normal read from read replica
+Immediate read after a write from primary
 
 The exact approach depends on the application's consistency requirements.
 
@@ -900,15 +617,9 @@ t
 ```
 
 Therefore:
+Primary - down
+Replica - still read-only
 
-```text
-Primary
-   X
-   │
-Replica
-   │
-   └── still read-only
-```
 
 Replication alone did not automatically fail over.
 
@@ -937,6 +648,9 @@ Expected:
 f
 ```
 
+<img width="878" height="226" alt="image" src="https://github.com/user-attachments/assets/3f903b6d-1fc8-48be-aacb-59f0723bb724" />
+
+
 The server is no longer in standby mode.
 
 It is now writable.
@@ -964,32 +678,12 @@ Then:
 
 ```sql
 SELECT *
-FROM orders
-WHERE customer_id = 2000;
+FROM orders ORDER BY id;
 ```
+
+<img width="650" height="266" alt="image" src="https://github.com/user-attachments/assets/a1fecb00-e454-453f-9e30-002939af9e09" />
 
 The old replica has now become the new primary.
-
-Architecture:
-
-```text
-BEFORE
-
-Primary ───────► Replica
-  RW                RO
-
-
-AFTER PROMOTION
-
-Old Primary
-     X
-
-New Primary
-     │
-     └── RW
-```
-
----
 
 # 26. Promotion Is Not the Same as Automatic Failover
 
@@ -999,48 +693,15 @@ The promotion command was manual:
 pg_ctl promote
 ```
 
-PostgreSQL replication itself did not:
-
-```text
-detect failure
-+
-elect a new primary
-+
-change the application endpoint
-+
-reconfigure other replicas
-```
-
 A production HA system typically adds an orchestration/failover layer or uses a managed PostgreSQL service.
-
-The important distinction is:
-
-```text
-Replication
-    =
-maintain another copy
-
-Failover
-    =
-change database roles after failure
-```
-
----
 
 # 27. What Happens When the Old Primary Comes Back?
 
 This is critical.
 
 Suppose:
-
-```text
-Old Primary
-     X
-
-New Primary
-     │
-     └── accepts new writes
-```
+Old Primary - offline or down
+New Primary - accepts new writes
 
 The old primary is now potentially out of date.
 
@@ -1048,35 +709,7 @@ It should not simply be considered a healthy replica and immediately put back in
 
 The old primary may contain a different transaction history.
 
-Conceptually:
-
-```text
-Old Primary
-    history A
-
-New Primary
-    history A + new writes
-```
-
 The old primary needs to be rebuilt/rejoined as a standby of the new primary.
-
-Typical process:
-
-```text
-Old Primary
-    │
-    ▼
-Discard/rebuild old state
-    │
-    ▼
-pg_basebackup from new primary
-    │
-    ▼
-Start as standby
-    │
-    ▼
-Stream WAL
-```
 
 This is known as re-provisioning or rejoining the old primary.
 
@@ -1091,31 +724,6 @@ sync_state = async
 ```
 
 The primary doesn't wait for the replica to replay every change before acknowledging the transaction.
-
-Potential scenario:
-
-```text
-T1
-Write order A
-
-Primary commits
-    │
-    ├── application receives success
-    │
-    ▼
-WAL still hasn't reached/replayed on replica
-
-T2
-Primary crashes
-```
-
-After promotion:
-
-```text
-Replica
-   │
-   └── order A may not exist
-```
 
 Therefore asynchronous replication can potentially lose the most recent transactions that had not reached the replica.
 
@@ -1134,16 +742,12 @@ It answers:
 > How much recently committed data could potentially be lost after a failure?
 
 With asynchronous replication:
-
-```text
 Potentially some recent transactions
-```
+
 
 With properly configured synchronous replication:
-
-```text
 Much stronger protection against losing acknowledged transactions
-```
+
 
 There are still important operational nuances, but the tradeoff is the key concept.
 
@@ -1152,42 +756,6 @@ There are still important operational nuances, but the tradeoff is the key conce
 # 30. Synchronous Replication
 
 PostgreSQL also supports synchronous replication.
-
-Conceptually:
-
-```text
-Application
-     │
-     ▼
-Primary
-     │
-     │ WAL
-     ▼
-Replica
-     │
-     │ acknowledgement
-     ▼
-Primary
-     │
-     ▼
-Commit acknowledged
-     │
-     ▼
-Application
-```
-
-In asynchronous replication:
-
-```text
-Application
-     │
-     ▼
-Primary
-     │
-     ├── commit
-     │
-     └── WAL → Replica
-```
 
 The synchronous model can provide stronger durability guarantees, but it introduces additional latency and can make the primary more dependent on replica availability.
 
@@ -1204,86 +772,13 @@ We discussed synchronous replication as part of the replication design, but this
 
 ---
 
-# 31. Replication Slots
-
-PostgreSQL replication slots help ensure that required WAL is retained for a replica.
-
-Conceptually:
-
-```text
-Primary
-  │
-  ├── WAL 101
-  ├── WAL 102
-  ├── WAL 103
-  ├── WAL 104
-  │
-  └── Replica is currently at WAL 102
-```
-
-The primary must retain WAL needed by the replica.
-
-A replication slot can track the replica's required WAL position.
-
-However, replication slots create another operational risk.
-
-If a replica disappears permanently:
-
-```text
-Replica fails
-      │
-      ▼
-Replication slot remains
-      │
-      ▼
-Primary keeps retaining WAL
-      │
-      ▼
-WAL directory grows
-      │
-      ▼
-Disk usage increases
-```
-
-A poorly managed replication slot can eventually contribute to disk exhaustion.
-
-Therefore:
-
-```text
-Replication slots
-+
-Monitoring
-```
-
-must go together.
-
-We intentionally did not add a replication slot to the first simple Docker lab because the goal was to demonstrate the core mechanism without introducing unnecessary operational complexity.
-
----
-
 # 32. Split-Brain
 
 One of the most dangerous distributed database problems is split-brain.
 
 Imagine the primary becomes unreachable from the application or monitoring system, but is still running.
 
-Another server gets promoted:
-
-```text
-               Network partition
-
-        ┌─────────────┐
-        │ Old Primary │
-        │     RW      │
-        └─────────────┘
-
-               X X X
-
-        ┌─────────────┐
-        │ New Primary │
-        │     RW      │
-        └─────────────┘
-```
+Another server gets promoted
 
 Now both sides can accept writes.
 
@@ -1308,28 +803,16 @@ The second replication model in this project is bidirectional logical replicatio
 Instead of:
 
 ```text
-Primary → Replica
+Primary -> Replica
 ```
 
 we configure:
 
 ```text
-Node A ◄────────► Node B
+Node A <-----> Node B
 ```
 
 Both nodes are writable.
-
-```text
-Node A
-  RW
-  ▲
-  │
-  │ logical replication
-  │
-  ▼
-Node B
-  RW
-```
 
 This is commonly described as:
 
@@ -1347,26 +830,12 @@ Physical replication is used for the primary/standby model.
 
 Logical replication works at the logical change level.
 
-It allows us to define:
-
-```text
-Publication
-     │
-     ▼
-Tables whose changes are published
-     │
-     ▼
-Subscription
-     │
-     ▼
-Target database
-```
 
 This gives us the ability to build:
 
 ```text
-A publishes → B subscribes
-B publishes → A subscribes
+A publishes -> B subscribes
+B publishes -> A subscribes
 ```
 
 ---
@@ -1501,14 +970,6 @@ CREATE PUBLICATION node_a_publication
 FOR TABLE orders;
 ```
 
-Conceptually:
-
-```text
-Node A
-   │
-   └── publishes changes to orders
-```
-
 ---
 
 # 39. Subscription
@@ -1521,14 +982,9 @@ CONNECTION 'host=postgres-multi-a port=5432 user=repluser password=replpassword 
 PUBLICATION node_a_publication
 WITH (copy_data = false);
 ```
+<img width="716" height="249" alt="image" src="https://github.com/user-attachments/assets/aa195e80-fb3d-41bd-b206-717c7226cef5" />
 
-This means:
 
-```text
-Node B
-   │
-   └── subscribes to Node A
-```
 
 Then on Node A:
 
@@ -1538,12 +994,13 @@ CONNECTION 'host=postgres-multi-b port=5432 user=repluser password=replpassword 
 PUBLICATION node_b_publication
 WITH (copy_data = false);
 ```
+<img width="804" height="250" alt="image" src="https://github.com/user-attachments/assets/7577299d-a954-4b78-8456-849a3b15c297" />
+
 
 Now:
 
 ```text
-Node A ◄──────────────► Node B
-  RW                      RW
+Node A <--------> Node B
 ```
 
 ---
@@ -1597,24 +1054,6 @@ SELECT * FROM orders;
 
 The row should appear.
 
-Flow:
-
-```text
-Node A
-  │
-  │ INSERT
-  ▼
-Publication
-  │
-  ▼
-Subscription
-  │
-  ▼
-Node B
-```
-
----
-
 # 42. Test Write on Node B
 
 Node B:
@@ -1645,15 +1084,6 @@ ORDER BY id;
 The row should appear.
 
 Now both directions work:
-
-```text
-             INSERT
-Node A ─────────────────► Node B
-  ▲                           │
-  │                           │
-  └───────────────────────────┘
-             INSERT
-```
 
 Both nodes are writable.
 
@@ -1694,37 +1124,11 @@ Possible problems include:
 
 A conflict can stop logical replication for the affected subscription and require investigation.
 
-Therefore:
-
-```text
-Multi-primary
-=
-multiple writable nodes
-+
-conflict management
-```
-
 ---
 
 # 44. Global ID Generation
 
 Multi-primary makes locally generated numeric IDs dangerous.
-
-For example:
-
-```text
-Node A:
-1
-2
-3
-4
-
-Node B:
-1
-2
-3
-4
-```
 
 The two nodes can generate the same primary keys independently.
 
@@ -1784,20 +1188,6 @@ A production deployment needs an explicit migration strategy.
 
 Multi-primary can be useful when multiple locations need to accept writes.
 
-Example:
-
-```text
-             Global Application
-
-            /                 \
-           ▼                   ▼
-       Node A                Node B
-      Europe                Asia
-         RW                    RW
-           \                   /
-            └──── replicate ──┘
-```
-
 Potential reasons include:
 
 * Regional write locality
@@ -1826,89 +1216,6 @@ However, this comes with significantly greater consistency complexity.
 
 ---
 
-# 48. Replication vs Sharding
-
-This distinction is fundamental.
-
-## Replication
-
-Copies data:
-
-```text
-Primary
-   │
-   ▼
-Replica
-```
-
-Both contain the same dataset.
-
-Purpose:
-
-```text
-Availability
-Read scaling
-Durability
-```
-
-## Sharding
-
-Splits data:
-
-```text
-Shard 1
-   +
-Shard 2
-```
-
-Each contains part of the dataset.
-
-Purpose:
-
-```text
-Data scaling
-Write scaling
-Storage scaling
-```
-
-You can combine them.
-
----
-
-# 49. Sharding + Replication
-
-A large production architecture could look like:
-
-```text
-                    Application
-                         │
-                    Shard Router
-                    /          \
-                   /            \
-                  ▼              ▼
-
-             Shard 1          Shard 2
-               │                │
-          ┌────┴────┐      ┌────┴────┐
-          │         │      │         │
-       Primary   Replica Primary   Replica
-          │         │      │         │
-          └───rep───┘      └───rep───┘
-```
-
-Now we solve multiple problems:
-
-### Sharding
-
-Allows data to be distributed across multiple database servers.
-
-### Replication
-
-Provides additional copies for availability and read scaling.
-
-This is much closer to the architecture used by large distributed systems.
-
----
 
 # 50. Important Production Considerations
 
@@ -1980,27 +1287,9 @@ DELETE FROM orders;
 
 runs on the primary.
 
-Replication faithfully copies that change:
-
-```text
-DELETE
-  │
-  ▼
-Primary
-  │
-  ▼
-Replica
-```
+Replication faithfully copies that change
 
 Now both databases have lost the data.
-
-Therefore:
-
-```text
-Replication
-!=
-Backup
-```
 
 A production system needs both.
 
@@ -2014,449 +1303,10 @@ Two important disaster-recovery metrics are:
 
 How much data can be lost?
 
-```text
-"Can we lose 5 seconds of transactions?"
-"Can we lose 0 seconds?"
-```
+Can we lose 5 seconds of transactions?"
+Can we lose 0 seconds?"
 
-### RTO — Recovery Time Objective
-
-How long can recovery take?
-
-```text
-"Must recover within 30 seconds?"
-"Within 10 minutes?"
-```
-
-Replication configuration should be designed around these requirements.
-
----
-
-# 53. Common Failure Scenarios
-
-## Scenario 1 — Replica fails
-
-```text
-Primary ───X─── Replica
-```
-
-Primary can continue serving writes.
-
-Restore the replica and let it catch up.
-
----
-
-## Scenario 2 — Primary fails
-
-```text
-Primary
-   X
-
-Replica
-```
-
-Promotion may be required:
-
-```text
-Replica
-   │
-   ▼
-New Primary
-```
-
----
-
-## Scenario 3 — Replica is far behind
-
-```text
-Primary
-   │
-   │ lots of WAL
-   ▼
-Replica
-   │
-   └── replaying slowly
-```
-
-Monitor lag.
-
-Determine whether the replica can catch up or needs to be rebuilt.
-
----
-
-## Scenario 4 — Network partition
-
-```text
-Primary  X  Replica
-```
-
-Do not blindly promote both sides.
-
-Otherwise split-brain can occur.
-
----
-
-## Scenario 5 — Accidental DELETE
-
-```text
-Primary
-   │
-   ▼
-Replica
-```
-
-Both receive the delete.
-
-Restore from backup rather than relying on replication.
-
----
-
-# 54. Useful PostgreSQL Commands
-
-### Check whether the server is a standby
-
-```sql
-SELECT pg_is_in_recovery();
-```
-
-### View connected replicas on a primary
-
-```sql
-SELECT
-    client_addr,
-    state,
-    sync_state,
-    sent_lsn,
-    write_lsn,
-    flush_lsn,
-    replay_lsn
-FROM pg_stat_replication;
-```
-
-### Estimate WAL replay lag
-
-```sql
-SELECT
-    application_name,
-    pg_size_pretty(
-        pg_wal_lsn_diff(
-            pg_current_wal_lsn(),
-            replay_lsn
-        )
-    ) AS replay_lag
-FROM pg_stat_replication;
-```
-
-### Check logical subscriptions
-
-```sql
-SELECT
-    subname,
-    subenabled
-FROM pg_subscription;
-```
-
----
-
-# 55. Useful Docker Commands
-
-Start:
-
-```bash
-docker compose up -d
-```
-
-Stop containers:
-
-```bash
-docker compose down
-```
-
-Stop and remove database volumes:
-
-```bash
-docker compose down -v
-```
-
-See containers:
-
-```bash
-docker ps
-```
-
-Stop primary:
-
-```bash
-docker kill scaling-primary
-```
-
-Stop replica:
-
-```bash
-docker stop scaling-replica
-```
-
-Start replica:
-
-```bash
-docker start scaling-replica
-```
-
-Promote replica:
-
-```bash
-docker exec scaling-replica \
-pg_ctl promote -D /var/lib/postgresql/data
-```
-
-Connect to primary:
-
-```bash
-docker exec -it scaling-primary \
-psql -U repluser -d replication_primary
-```
-
-Connect to replica:
-
-```bash
-docker exec -it scaling-replica \
-psql -U repluser -d replication_primary
-```
-
----
-
-# 56. Troubleshooting
-
-## Replica does not start
-
-Check logs:
-
-```bash
-docker logs scaling-replica
-```
-
-Check whether the primary is reachable:
-
-```bash
-docker exec scaling-replica \
-pg_isready -h scaling-primary -p 5432 -U repluser
-```
-
----
-
-## Replica cannot connect to primary
-
-Check:
-
-```text
-pg_hba.conf
-```
-
-and make sure the replication connection is allowed.
-
-Also verify that:
-
-```text
-wal_level=replica
-```
-
-is configured on the primary.
-
----
-
-## Replica does not contain newly inserted rows
-
-Check the primary:
-
-```sql
-SELECT * FROM pg_stat_replication;
-```
-
-Then check:
-
-```text
-state
-sync_state
-replay_lsn
-```
-
-Also check:
-
-```bash
-docker logs scaling-replica
-```
-
----
-
-## Changes do not replicate in the multi-primary lab
-
-Check subscriptions:
-
-```sql
-SELECT
-    subname,
-    subenabled
-FROM pg_subscription;
-```
-
-Check the PostgreSQL logs for the subscription worker.
-
-Also verify:
-
-```text
-wal_level=logical
-```
-
-on both nodes.
-
----
-
-# 57. Key Lessons
-
-The most important mental model from this section is:
-
-```text
-Replication
-    ↓
-Another copy of the database
-```
-
-Then build on top of it:
-
-```text
-Replication
-    ↓
-WAL
-    ↓
-Primary / Replica
-    ↓
-Replication Lag
-    ↓
-Read Scaling
-    ↓
-Failure Detection
-    ↓
-Failover
-    ↓
-Promotion
-    ↓
-Rejoining
-```
-
-For multi-primary:
-
-```text
-Logical Replication
-    ↓
-Publication
-    ↓
-Subscription
-    ↓
-Bidirectional Replication
-    ↓
-Multiple Writers
-    ↓
-Conflict Management
-    ↓
-Global ID Strategy
-```
-
----
-
-# 58. Final Mental Model
-
-Remember these four concepts:
-
-```text
-PARTITIONING
------------------------------
-Split data inside one database
-
-
-SHARDING
------------------------------
-Split data across databases
-
-
-REPLICATION
------------------------------
-Copy data across databases
-
-
-MULTI-PRIMARY
------------------------------
-Multiple databases accept writes
-and replicate changes between them
-```
-
-Or even simpler:
-
-```text
-Partitioning
-     ↓
-"Split the table"
-
-Sharding
-     ↓
-"Split the data"
-
-Replication
-     ↓
-"Copy the data"
-
-Multi-primary
-     ↓
-"Multiple copies can accept writes"
-```
-
----
-
-# 59. What This Lab Demonstrated
-
-This repository now demonstrates:
-
-```text
-PostgreSQL 17
-     │
-     ├── Primary / Replica
-     │      │
-     │      ├── WAL
-     │      ├── Streaming replication
-     │      ├── Read scaling
-     │      ├── Replica lag
-     │      ├── Read-after-write
-     │      ├── Primary failure
-     │      ├── Promotion
-     │      └── Failover concepts
-     │
-     └── Multi-Primary
-            │
-            ├── Logical replication
-            ├── Publications
-            ├── Subscriptions
-            ├── Bidirectional writes
-            ├── Conflict risks
-            └── Global ID considerations
-```
 
 The key takeaway is:
 
 > **Replication improves availability and allows read scaling, but it introduces consistency, lag, failover, and operational concerns. Multi-primary extends this by allowing multiple writers, but conflict management becomes a central design problem.**
-
-## Next Topic
-
-The replication section can now be considered complete. The remaining major database-scaling topic in this project is to combine what we learned into **real-world architecture patterns**, such as:
-
-```text
-Caching
-   +
-Indexes
-   +
-Partitioning
-   +
-Sharding
-   +
-Replication
-```
-
-and understand **when to use which technique, what bottleneck each one solves, and how they work together in a production system**.

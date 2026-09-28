@@ -844,62 +844,7 @@ B publishes -> A subscribes
 
 We use two PostgreSQL 17 containers.
 
-Node A:
-
-```yaml
-postgres-multi-a:
-  image: postgres:17
-  container_name: scaling-multi-a
-  environment:
-    POSTGRES_USER: repluser
-    POSTGRES_PASSWORD: replpassword
-    POSTGRES_DB: multi_primary
-  ports:
-    - "5437:5432"
-  volumes:
-    - multi_a_data:/var/lib/postgresql/data
-    - ./multi-primary/node-a/init.sql:/docker-entrypoint-initdb.d/init.sql
-    - ./multi-primary/node-a/pg_hba.conf:/etc/postgresql/pg_hba.conf
-  command:
-    - postgres
-    - -c
-    - wal_level=logical
-    - -c
-    - max_wal_senders=10
-    - -c
-    - max_replication_slots=10
-    - -c
-    - hba_file=/etc/postgresql/pg_hba.conf
-```
-
-Node B:
-
-```yaml
-postgres-multi-b:
-  image: postgres:17
-  container_name: scaling-multi-b
-  environment:
-    POSTGRES_USER: repluser
-    POSTGRES_PASSWORD: replpassword
-    POSTGRES_DB: multi_primary
-  ports:
-    - "5438:5432"
-  volumes:
-    - multi_b_data:/var/lib/postgresql/data
-    - ./multi-primary/node-b/init.sql:/docker-entrypoint-initdb.d/init.sql
-    - ./multi-primary/node-b/pg_hba.conf:/etc/postgresql/pg_hba.conf
-  command:
-    - postgres
-    - -c
-    - wal_level=logical
-    - -c
-    - max_wal_senders=10
-    - -c
-    - max_replication_slots=10
-    - -c
-    - hba_file=/etc/postgresql/pg_hba.conf
-```
-
+refer replication/docker-compose.yml
 ---
 
 # 36. Multi-Primary PostgreSQL Configuration

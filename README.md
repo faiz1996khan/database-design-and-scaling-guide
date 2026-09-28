@@ -23,4 +23,5 @@ Each section contains hands-on Docker examples, SQL queries, experiments, and ex
 
 Understand how database systems scale, remain available, and handle traffic through practical experiments.
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/80613caf-e966-4286-a991-f884cb7ab161" />
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/d02368cb-2de0-49bc-a7e8-77f94fb04bc6" />
+

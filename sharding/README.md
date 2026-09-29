@@ -8,6 +8,7 @@ Sharding splits data across multiple independent database instances.
 
 Unlike partitioning, where data is divided inside one database, sharding distributes data across separate databases.
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/7c75b788-d4cb-42be-8bdf-b0886d427495" />
 
 
 ## 2. Why Sharding?

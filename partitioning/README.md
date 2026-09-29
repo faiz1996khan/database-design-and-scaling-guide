@@ -15,6 +15,9 @@ Learn:
 
 Partitioning splits one logical table into multiple smaller physical tables called **partitions**.
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cfa8660f-e152-4192-bf0c-a3ce2feabd7f" />
+
+
 Example:
 
 ```text

@@ -1,5 +1,5 @@
 
-# Database Scaling: Indexing
+# Indexing
 
 This section demonstrates how database indexes improve query performance and the trade-offs involved in using them.
 
@@ -56,6 +56,9 @@ Records are generated using PostgreSQL's `generate_series()` function.
 ## What Is an Index?
 
 An index is a separate data structure that helps the database locate rows without scanning the entire table.
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cd1462fe-ac08-42f5-a074-9b5afc3510e8" />
+
 
 Without an appropriate index, PostgreSQL may perform a sequential scan:
 
